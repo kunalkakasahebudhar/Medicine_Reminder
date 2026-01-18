@@ -1,7 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:flutter_timezone/flutter_timezone.dart';
+// import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:flutter/foundation.dart';
 
 class NotificationService {
@@ -10,7 +10,7 @@ class NotificationService {
 
   static Future<void> init(Function(NotificationResponse)? onResponse) async {
     tz.initializeTimeZones();
-    if (!kIsWeb) {
+    /* if (!kIsWeb) {
       try {
         final String timeZoneName = await FlutterTimezone.getLocalTimezone();
         tz.setLocalLocation(tz.getLocation(timeZoneName));
@@ -20,7 +20,7 @@ class NotificationService {
           'NotificationService: Failed to set local location, using UTC: $e',
         );
       }
-    }
+    } */
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
