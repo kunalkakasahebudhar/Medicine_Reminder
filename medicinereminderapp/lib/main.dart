@@ -12,8 +12,12 @@ void main() async {
   // Initialize Hive
   await HiveService.init();
 
-  // Initialize Notifications
-  await NotificationService.init();
+  // Initialize Notifications with popup handler
+  await NotificationService.init((response) {
+    if (response.payload != null || response.id != null) {
+      // Logic for handling notification click if needed
+    }
+  });
   await NotificationService.requestPermissions();
 
   runApp(const MyApp());

@@ -34,7 +34,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     }
   }
 
-  void _saveMedicine() {
+  Future<void> _saveMedicine() async {
     final name = _nameController.text.trim();
     final dose = _doseController.text.trim();
 
@@ -56,7 +56,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       minute: _selectedTime!.minute,
     );
 
-    context.read<MedicineProvider>().addMedicine(newMedicine);
+    await context.read<MedicineProvider>().addMedicine(newMedicine);
+    if (!mounted) return;
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
