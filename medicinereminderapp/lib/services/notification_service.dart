@@ -8,30 +8,29 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static bool _isInitialized = false;
+
   static Future<void> init(Function(NotificationResponse)? onResponse) async {
-    tz.initializeTimeZones();
-    /* if (!kIsWeb) {
-      try {
-        final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-        tz.setLocalLocation(tz.getLocation(timeZoneName));
-        print('NotificationService: Local location set to ${tz.local.name}');
-      } catch (e) {
-        print(
-          'NotificationService: Failed to set local location, using UTC: $e',
-        );
-      }
-    } */
+    if (_isInitialized) return;
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      tz.initializeTimeZones();
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    await _notificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: onResponse,
-    );
+      const InitializationSettings initializationSettings =
+          InitializationSettings(android: initializationSettingsAndroid);
+
+      await _notificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: onResponse,
+      );
+      _isInitialized = true;
+      print('NotificationService: Initialized successfully');
+    } catch (e) {
+      print('NotificationService: Initialization failed: $e');
+    }
   }
 
   static Future<void> scheduleNotification({

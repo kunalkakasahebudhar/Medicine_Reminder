@@ -14,9 +14,15 @@ class MedicineProvider with ChangeNotifier {
   List<MedicineModel> get medicines => _medicines;
 
   void _loadMedicines() {
-    _medicines = _hiveService.getMedicines();
-    _sortMedicines();
-    notifyListeners();
+    try {
+      _medicines = _hiveService.getMedicines();
+      _sortMedicines();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('MedicineProvider: Error loading medicines: $e');
+      _medicines = [];
+      notifyListeners();
+    }
   }
 
   void _sortMedicines() {
@@ -55,5 +61,11 @@ class MedicineProvider with ChangeNotifier {
     await _hiveService.deleteMedicine(id);
     await NotificationService.cancelNotification(id);
     _loadMedicines();
+  }
+
+  Future<void> toggleMedicineStatus(MedicineModel medicine) async {
+    medicine.isDone = !medicine.isDone;
+    await medicine.save();
+    notifyListeners();
   }
 }

@@ -4,9 +4,17 @@ import '../core/constants.dart';
 
 class HiveService {
   static Future<void> init() async {
-    await Hive.initFlutter();
-    Hive.registerAdapter(MedicineModelAdapter());
-    await Hive.openBox<MedicineModel>(AppConstants.boxName);
+    try {
+      await Hive.initFlutter();
+      if (!Hive.isAdapterRegistered(0)) {
+        Hive.registerAdapter(MedicineModelAdapter());
+      }
+      await Hive.openBox<MedicineModel>(AppConstants.boxName);
+      print('HiveService: Box opened successfully');
+    } catch (e) {
+      print('HiveService: Error initializing Hive: $e');
+      rethrow; // Rethrow to let main handle it
+    }
   }
 
   Box<MedicineModel> get medicineBox =>

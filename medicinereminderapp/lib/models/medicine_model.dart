@@ -19,11 +19,15 @@ class MedicineModel extends HiveObject {
   @HiveField(4)
   final int minute;
 
+  @HiveField(5)
+  bool isDone;
+
   MedicineModel({
     required this.id,
     required this.name,
     required this.dose,
     required this.hour,
     required this.minute,
+    this.isDone = false,
   });
 }

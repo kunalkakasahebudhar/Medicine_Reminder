@@ -7,18 +7,30 @@ import 'services/notification_service.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
-  await HiveService.init();
+    print('Main: Initializing Hive...');
+    // Initialize Hive
+    await HiveService.init();
+    print('Main: Hive initialized.');
 
-  // Initialize Notifications with popup handler
-  await NotificationService.init((response) {
-    if (response.payload != null || response.id != null) {
-      // Logic for handling notification click if needed
-    }
-  });
-  await NotificationService.requestPermissions();
+    print('Main: Initializing Notifications...');
+    // Initialize Notifications
+    await NotificationService.init((response) {
+      if (response.payload != null || response.id != null) {
+        // Logic for handling notification click
+      }
+    });
+    print('Main: Notifications initialized.');
+
+    print('Main: Requesting permissions...');
+    // Background permissions
+    await NotificationService.requestPermissions();
+    print('Main: Permissions requested.');
+  } catch (e) {
+    print('Main: Initialization failed: $e');
+  }
 
   runApp(const MyApp());
 }
@@ -36,6 +48,17 @@ class MyApp extends StatelessWidget {
         title: 'Medicine Reminder',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        builder: (context, child) {
+          // Global error handling UI
+          ErrorWidget.builder = (details) {
+            return Scaffold(
+              body: Center(
+                child: Text('Something went wrong: ${details.exception}'),
+              ),
+            );
+          };
+          return child!;
+        },
         home: const HomeScreen(),
       ),
     );

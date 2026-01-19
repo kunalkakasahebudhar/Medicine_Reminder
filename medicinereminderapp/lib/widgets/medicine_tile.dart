@@ -13,51 +13,159 @@ class MedicineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time = TimeOfDay(hour: medicine.hour, minute: medicine.minute);
+    final theme = Theme.of(context);
 
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
-            shape: BoxShape.circle,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: medicine.isDone
+                ? Colors.transparent
+                : theme.primaryColor.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-          child: Icon(Icons.medication, color: Theme.of(context).primaryColor),
+        ],
+        border: Border.all(
+          color: medicine.isDone
+              ? Colors.grey.shade200
+              : theme.primaryColor.withOpacity(0.1),
+          width: 1,
         ),
-        title: Text(
-          medicine.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Dose: ${medicine.dose}'),
-            const SizedBox(height: 2),
-            Row(
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () {
+            context.read<MedicineProvider>().toggleMedicineStatus(medicine);
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  time.format(context),
-                  style: const TextStyle(
-                    color: Colors.teal,
-                    fontWeight: FontWeight.w600,
+                // Icon Section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: medicine.isDone
+                        ? Colors.grey.shade100
+                        : theme.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(
+                    Icons.medication_rounded,
+                    color: medicine.isDone ? Colors.grey : theme.primaryColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Text Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        medicine.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: medicine.isDone ? Colors.grey : Colors.black87,
+                          decoration: medicine.isDone
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        medicine.dose,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: medicine.isDone ? Colors.grey : Colors.black54,
+                          decoration: medicine.isDone
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Time Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: medicine.isDone
+                              ? Colors.grey.shade200
+                              : Colors.teal.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.history_toggle_off_rounded,
+                              size: 14,
+                              color: medicine.isDone
+                                  ? Colors.grey
+                                  : Colors.teal,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              time.format(context),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: medicine.isDone
+                                    ? Colors.grey
+                                    : Colors.teal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Status Section
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        medicine.isDone
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: medicine.isDone
+                            ? Colors.green
+                            : theme.primaryColor,
+                        size: 30,
+                      ),
+                      onPressed: () {
+                        context.read<MedicineProvider>().toggleMedicineStatus(
+                          medicine,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      onPressed: () => _showDeleteDialog(context),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          onPressed: () {
-            _showDeleteDialog(context);
-          },
+          ),
         ),
       ),
     );
