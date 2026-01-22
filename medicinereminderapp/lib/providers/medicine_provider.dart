@@ -40,31 +40,47 @@ class MedicineProvider with ChangeNotifier {
     );
     await _hiveService.addMedicine(medicine);
 
-    // Schedule notification
-    try {
-      await NotificationService.scheduleNotification(
-        id: medicine.id,
-        title: 'Medicine Reminder',
-        body: 'Time to take ${medicine.name}',
-        hour: medicine.hour,
-        minute: medicine.minute,
-      );
-      print('Notification scheduled successfully for ${medicine.name}');
-    } catch (e) {
-      print('Error scheduling notification: $e');
+    // Schedule notification only if medicine is not completed
+    if (!medicine.isCompleted) {
+      try {
+        await NotificationService.scheduleNotification(
+          id: medicine.id,
+          title: 'Medicine Reminder',
+          body: 'Time to take ${medicine.name} (${medicine.remainingDoses} doses left)',
+          hour: medicine.hour,
+          minute: medicine.minute,
+          selectedDays: medicine.selectedDays,
+        );
+        print('Notification scheduled successfully for ${medicine.name}');
+      } catch (e) {
+        print('Error scheduling notification: $e');
+      }
     }
 
     _loadMedicines();
   }
 
   Future<void> deleteMedicine(int id) async {
+    final medicine = _medicines.firstWhere((m) => m.id == id);
     await _hiveService.deleteMedicine(id);
-    await NotificationService.cancelNotification(id);
+    await NotificationService.cancelNotification(id, medicine.selectedDays);
     _loadMedicines();
   }
 
   Future<void> toggleMedicineStatus(MedicineModel medicine) async {
     medicine.isDone = !medicine.isDone;
+    
+    // If marking as done, reduce dose count
+    if (medicine.isDone && medicine.remainingDoses > 0) {
+      medicine.takeDose();
+      
+      // If all doses are completed, cancel future notifications
+      if (medicine.isCompleted) {
+        await NotificationService.cancelNotification(medicine.id, medicine.selectedDays);
+        print('All doses completed for ${medicine.name}. Notifications cancelled.');
+      }
+    }
+    
     await medicine.save();
     notifyListeners();
   }

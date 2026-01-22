@@ -25,6 +25,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showReminderPopup(String message) {
+    // Extract medicine ID from payload if available
+    int? medicineId;
+    if (message.startsWith('medicine_id:')) {
+      medicineId = int.tryParse(message.split(':')[1]);
+    }
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -33,8 +39,19 @@ class _HomeScreenState extends State<HomeScreen> {
           'Medicine Reminder',
           style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
         ),
-        content: Text(message),
+        content: Text(message.contains('medicine_id:') 
+            ? "It's time for your medicine!" 
+            : message),
         actions: [
+          if (medicineId != null) ...[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _takeMedicine(medicineId!);
+              },
+              child: const Text('TAKE MEDICINE'),
+            ),
+          ],
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('OKAY'),
@@ -42,6 +59,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  void _takeMedicine(int medicineId) {
+    final provider = context.read<MedicineProvider>();
+    final medicine = provider.medicines.firstWhere((m) => m.id == medicineId);
+    provider.toggleMedicineStatus(medicine);
   }
 
   @override

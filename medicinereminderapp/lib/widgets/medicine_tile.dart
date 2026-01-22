@@ -82,52 +82,82 @@ class MedicineTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
+                      // Dose counter
                       Text(
-                        medicine.dose,
+                        medicine.isCompleted 
+                            ? 'Completed' 
+                            : '${medicine.remainingDoses}/${medicine.totalDoses} doses left',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: medicine.isDone ? Colors.grey : Colors.black54,
-                          decoration: medicine.isDone
-                              ? TextDecoration.lineThrough
-                              : null,
+                          fontSize: 12,
+                          color: medicine.isCompleted 
+                              ? Colors.green 
+                              : Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Time Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: medicine.isDone
-                              ? Colors.grey.shade200
-                              : Colors.teal.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.history_toggle_off_rounded,
-                              size: 14,
-                              color: medicine.isDone
-                                  ? Colors.grey
-                                  : Colors.teal,
+                      // Frequency and Time info
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              time.format(context),
+                            decoration: BoxDecoration(
+                              color: medicine.isDone
+                                  ? Colors.grey.shade200
+                                  : Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _getFrequencyText(),
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: medicine.isDone
                                     ? Colors.grey
-                                    : Colors.teal,
+                                    : Colors.blue.shade700,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: medicine.isDone
+                                  ? Colors.grey.shade200
+                                  : Colors.teal.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.history_toggle_off_rounded,
+                                  size: 14,
+                                  color: medicine.isDone
+                                      ? Colors.grey
+                                      : Colors.teal,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  time.format(context),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: medicine.isDone
+                                        ? Colors.grey
+                                        : Colors.teal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -140,13 +170,17 @@ class MedicineTile extends StatelessWidget {
                       icon: Icon(
                         medicine.isDone
                             ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked_rounded,
+                            : medicine.isCompleted
+                                ? Icons.done_all_rounded
+                                : Icons.radio_button_unchecked_rounded,
                         color: medicine.isDone
                             ? Colors.green
-                            : theme.primaryColor,
+                            : medicine.isCompleted
+                                ? Colors.grey
+                                : theme.primaryColor,
                         size: 30,
                       ),
-                      onPressed: () {
+                      onPressed: medicine.isCompleted ? null : () {
                         context.read<MedicineProvider>().toggleMedicineStatus(
                           medicine,
                         );
@@ -192,5 +226,20 @@ class MedicineTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getFrequencyText() {
+    switch (medicine.frequencyType) {
+      case FrequencyType.daily:
+        return 'Daily';
+      case FrequencyType.weekly:
+        return 'Weekly';
+      case FrequencyType.specificDays:
+        final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final selectedDayNames = medicine.selectedDays
+            .map((day) => dayNames[day - 1])
+            .join(', ');
+        return selectedDayNames;
+    }
   }
 }

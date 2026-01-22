@@ -39,57 +39,57 @@ class NotificationService {
     required String body,
     required int hour,
     required int minute,
+    required List<int> selectedDays,
   }) async {
     final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
-
-    if (scheduledDate.isBefore(now)) {
-      print(
-        'NotificationService: Time $hour:$minute has already passed for today. Triggering immediate notification.',
-      );
-
-      // Trigger immediate notification for today's dose if added late
-      await showImmediateNotification(
-        id: id + 100000, // Offset to avoid ID collision
-        title: '$title (Today\'s Dose)',
-        body:
-            'Reminder for ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}: $body',
-      );
-
-      // Schedule for tomorrow
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    print(
-      'NotificationService: Scheduling recurring at $scheduledDate (TZ: ${tz.local.name})',
-    );
-
-    await _notificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medicine_reminder_channel_v2', // Changed ID to ensure update
-          'Medicine Reminders',
-          channelDescription: 'Channel for medicine reminders',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          fullScreenIntent: true,
-          ticker: 'Medicine Reminder',
-          styleInformation: BigTextStyleInformation(''),
-          enableVibration: true,
-          playSound: true,
+    
+    for (int dayOfWeek in selectedDays) {
+      var scheduledDate = _getNextScheduledDate(now, dayOfWeek, hour, minute);
+      
+      await _notificationsPlugin.zonedSchedule(
+        id + dayOfWeek, // Unique ID for each day
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'medicine_reminder_channel_v2',
+            'Medicine Reminders',
+            channelDescription: 'Channel for medicine reminders',
+            importance: Importance.max,
+            priority: Priority.max,
+            category: AndroidNotificationCategory.alarm,
+            fullScreenIntent: true,
+            ticker: 'Medicine Reminder',
+            styleInformation: BigTextStyleInformation(''),
+            enableVibration: true,
+            playSound: true,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'Time to take $title: $body',
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        payload: 'medicine_id:$id',
+      );
+    }
+  }
+
+  static DateTime _getNextScheduledDate(DateTime now, int dayOfWeek, int hour, int minute) {
+    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
+    
+    // Calculate days until target day of week (1=Monday, 7=Sunday)
+    int currentDayOfWeek = now.weekday;
+    int daysUntilTarget = (dayOfWeek - currentDayOfWeek) % 7;
+    
+    if (daysUntilTarget == 0) {
+      // Same day - check if time has passed
+      if (scheduledDate.isBefore(now)) {
+        daysUntilTarget = 7; // Schedule for next week
+      }
+    }
+    
+    return scheduledDate.add(Duration(days: daysUntilTarget));
   }
 
   static Future<void> showImmediateNotification({
@@ -115,8 +115,10 @@ class NotificationService {
     );
   }
 
-  static Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+  static Future<void> cancelNotification(int id, List<int> selectedDays) async {
+    for (int dayOfWeek in selectedDays) {
+      await _notificationsPlugin.cancel(id + dayOfWeek);
+    }
   }
 
   static Future<void> requestPermissions() async {

@@ -9,6 +9,9 @@ class HiveService {
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(MedicineModelAdapter());
       }
+      if (!Hive.isAdapterRegistered(1)) {
+        Hive.registerAdapter(FrequencyTypeAdapter());
+      }
       await Hive.openBox<MedicineModel>(AppConstants.boxName);
       print('HiveService: Box opened successfully');
     } catch (e) {

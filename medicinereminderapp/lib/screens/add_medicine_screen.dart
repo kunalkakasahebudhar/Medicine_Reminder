@@ -12,13 +12,19 @@ class AddMedicineScreen extends StatefulWidget {
 
 class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final _nameController = TextEditingController();
-  final _doseController = TextEditingController();
+  final _totalDosesController = TextEditingController();
   TimeOfDay? _selectedTime;
+  FrequencyType _frequencyType = FrequencyType.daily;
+  List<int> _selectedDays = [];
+
+  final List<String> _dayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+  ];
 
   @override
   void dispose() {
     _nameController.dispose();
-    _doseController.dispose();
+    _totalDosesController.dispose();
     super.dispose();
   }
 
@@ -34,11 +40,52 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     }
   }
 
+  Widget _buildDaySelector() {
+    if (_frequencyType != FrequencyType.specificDays) return const SizedBox();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        const Text(
+          'SELECT DAYS',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.blueGrey,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          children: List.generate(7, (index) {
+            final dayNumber = index + 1;
+            final isSelected = _selectedDays.contains(dayNumber);
+            return FilterChip(
+              label: Text(_dayNames[index].substring(0, 3)),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedDays.add(dayNumber);
+                  } else {
+                    _selectedDays.remove(dayNumber);
+                  }
+                });
+              },
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
   Future<void> _saveMedicine() async {
     final name = _nameController.text.trim();
-    final dose = _doseController.text.trim();
+    final totalDosesText = _totalDosesController.text.trim();
 
-    if (name.isEmpty || dose.isEmpty || _selectedTime == null) {
+    if (name.isEmpty || totalDosesText.isEmpty || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill all fields and pick a time'),
@@ -48,12 +95,48 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       return;
     }
 
+    final totalDoses = int.tryParse(totalDosesText);
+    if (totalDoses == null || totalDoses <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid number of doses'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_frequencyType == FrequencyType.specificDays && _selectedDays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one day'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    List<int> days = [];
+    switch (_frequencyType) {
+      case FrequencyType.daily:
+        days = [1, 2, 3, 4, 5, 6, 7];
+        break;
+      case FrequencyType.weekly:
+        days = [7]; // Sunday only for weekly
+        break;
+      case FrequencyType.specificDays:
+        days = _selectedDays;
+        break;
+    }
+
     final newMedicine = MedicineModel(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       name: name,
-      dose: dose,
+      totalDoses: totalDoses,
       hour: _selectedTime!.hour,
       minute: _selectedTime!.minute,
+      frequencyType: _frequencyType,
+      selectedDays: days,
     );
 
     await context.read<MedicineProvider>().addMedicine(newMedicine);
@@ -111,11 +194,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   ),
                   const SizedBox(height: 20),
                   TextField(
-                    controller: _doseController,
+                    controller: _totalDosesController,
+                    keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Dose',
-                      prefixIcon: const Icon(Icons.opacity_rounded),
-                      hintText: 'e.g., 1 tablet, 5ml',
+                      labelText: 'Total Doses',
+                      prefixIcon: const Icon(Icons.numbers),
+                      hintText: 'e.g., 8',
                       fillColor: Colors.white,
                       filled: true,
                       border: OutlineInputBorder(
@@ -124,6 +208,42 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<FrequencyType>(
+                    value: _frequencyType,
+                    decoration: InputDecoration(
+                      labelText: 'Frequency',
+                      prefixIcon: const Icon(Icons.schedule),
+                      fillColor: Colors.white,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    items: FrequencyType.values.map((type) {
+                      String label;
+                      switch (type) {
+                        case FrequencyType.daily:
+                          label = 'Daily';
+                          break;
+                        case FrequencyType.weekly:
+                          label = 'Weekly (Sunday)';
+                          break;
+                        case FrequencyType.specificDays:
+                          label = 'Specific Days';
+                          break;
+                      }
+                      return DropdownMenuItem(value: type, child: Text(label));
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _frequencyType = value!;
+                        _selectedDays.clear();
+                      });
+                    },
+                  ),
+                  _buildDaySelector(),
                   const SizedBox(height: 40),
                   const Text(
                     'SCHEDULE',
